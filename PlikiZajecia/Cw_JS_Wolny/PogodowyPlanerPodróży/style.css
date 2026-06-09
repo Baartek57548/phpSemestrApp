@@ -1,6 +1,0 @@
-body { margin: 0; font-family: sans-serif; }
-.layout { display: flex; height: 100vh; }
-#map { width: 75%; height: 100%; }
-#sidebar { width: 25%; background: #f8f9fa; padding: 20px; overflow-y: auto; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
-li { background: white; margin-bottom: 15px; padding: 15px; list-style: none; border-radius: 8px; border: 1px solid #ddd; }
-li input { margin-top: 5px; width: 90%; padding: 5px; }

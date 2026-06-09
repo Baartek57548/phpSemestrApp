@@ -16,16 +16,6 @@
         <h2>Dodaj opinie o wpisie</h2>
         {{ form_start(comment_form) }}
             <div class="form-row">
-                {{ form_label(comment_form.author) }}
-                {{ form_widget(comment_form.author) }}
-                <div class="form-errors">{{ form_errors(comment_form.author) }}</div>
-            </div>
-            <div class="form-row">
-                {{ form_label(comment_form.email) }}
-                {{ form_widget(comment_form.email) }}
-                <div class="form-errors">{{ form_errors(comment_form.email) }}</div>
-            </div>
-            <div class="form-row">
                 {{ form_label(comment_form.rating) }}
                 {{ form_widget(comment_form.rating) }}
                 <div class="form-errors">{{ form_errors(comment_form.rating) }}</div>
