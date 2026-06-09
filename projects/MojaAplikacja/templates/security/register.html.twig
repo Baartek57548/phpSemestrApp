@@ -1,0 +1,25 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rejestracja{% endblock %}
+
+{% block body %}
+    <section class="form-panel">
+        <h2>Rejestracja</h2>
+
+        {{ form_start(registration_form) }}
+            <div class="form-row">
+                {{ form_label(registration_form.email) }}
+                {{ form_widget(registration_form.email) }}
+                <div class="form-errors">{{ form_errors(registration_form.email) }}</div>
+            </div>
+            <div class="form-row">
+                {{ form_label(registration_form.plainPassword) }}
+                {{ form_widget(registration_form.plainPassword) }}
+                <div class="form-errors">{{ form_errors(registration_form.plainPassword) }}</div>
+            </div>
+            <div class="form-row">
+                {{ form_widget(registration_form.save) }}
+            </div>
+        {{ form_end(registration_form) }}
+    </section>
+{% endblock %}

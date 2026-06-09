@@ -1,0 +1,57 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block body %}
+    <article>
+        <p><a href="{{ path('blog_index') }}">Powrot do wpisów z Bloga</a></p>
+        <h2>{{ post.title }}</h2>
+        {% if post.created_at is defined %}
+            <p><small>Dodano: {{ post.created_at }}</small></p>
+        {% endif %}
+        <p>{{ post.content }}</p>
+    </article>
+
+    <section class="form-panel">
+        <h2>Dodaj opinie o wpisie</h2>
+        {{ form_start(comment_form) }}
+            <div class="form-row">
+                {{ form_label(comment_form.author) }}
+                {{ form_widget(comment_form.author) }}
+                <div class="form-errors">{{ form_errors(comment_form.author) }}</div>
+            </div>
+            <div class="form-row">
+                {{ form_label(comment_form.email) }}
+                {{ form_widget(comment_form.email) }}
+                <div class="form-errors">{{ form_errors(comment_form.email) }}</div>
+            </div>
+            <div class="form-row">
+                {{ form_label(comment_form.rating) }}
+                {{ form_widget(comment_form.rating) }}
+                <div class="form-errors">{{ form_errors(comment_form.rating) }}</div>
+            </div>
+            <div class="form-row">
+                {{ form_label(comment_form.message) }}
+                {{ form_widget(comment_form.message) }}
+                <div class="form-errors">{{ form_errors(comment_form.message) }}</div>
+            </div>
+            <div class="form-row">
+                {{ form_widget(comment_form.save) }}
+            </div>
+        {{ form_end(comment_form) }}
+    </section>
+
+    <section>
+        <h2>Opinie czytelnikow</h2>
+        {% for comment in comments|reverse %}
+            <article class="card">
+                <div class="comment-meta">
+                    <strong>{{ comment.author }}</strong> • ocena {{ comment.rating }}/5 • {{ comment.created_at }}
+                </div>
+                <p>{{ comment.message }}</p>
+            </article>
+        {% else %}
+            <p>Na razie nie ma jeszcze opinii do tego wpisu.</p>
+        {% endfor %}
+    </section>
+{% endblock %}

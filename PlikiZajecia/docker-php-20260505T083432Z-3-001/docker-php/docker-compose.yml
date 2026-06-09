@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  apache:
+    build: apache
+    ports:
+      - "8095:80"
+      - "8099:80"
+    links:
+      - php_8_4
+    volumes:
+      - ./projects:/var/www
+      - ./apache/conf:/usr/local/apache2/conf/overwrite
+    working_dir: "/var/www"
+
+  php_8_4:
+    build: php_8_4
+    volumes:
+      - ./php/php.ini:/usr/local/etc/php/conf.d/php-override.ini
+      - ./projects:/var/www
+    working_dir: /var/www

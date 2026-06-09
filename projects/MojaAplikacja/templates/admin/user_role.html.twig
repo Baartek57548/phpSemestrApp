@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Zmiana roli{% endblock %}
+
+{% block body %}
+    <section class="form-panel">
+        <h2>Zmień rolę użytkownika</h2>
+        <p>Użytkownik: <strong>{{ user_to_edit.email }}</strong></p>
+
+        {% if role_change_blocked %}
+            <p>Nie możesz zmienić swojej roli, gdy jesteś jedynym administratorem.</p>
+        {% else %}
+            {{ form_start(role_form) }}
+                <div class="form-row">
+                    {{ form_label(role_form.role) }}
+                    {{ form_widget(role_form.role) }}
+                    <div class="form-errors">{{ form_errors(role_form.role) }}</div>
+                </div>
+                <div class="form-row">
+                    {{ form_widget(role_form.save) }}
+                </div>
+            {{ form_end(role_form) }}
+        {% endif %}
+
+        <p><a href="{{ path('admin_index') }}">Wróć do panelu admina</a></p>
+    </section>
+{% endblock %}

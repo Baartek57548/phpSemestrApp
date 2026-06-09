@@ -1,0 +1,61 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Panel administratora{% endblock %}
+
+{% block body %}
+    <section class="card">
+        <h2>Panel administratora</h2>
+        <p>Witaj w prostym panelu administracyjnym.</p>
+    </section>
+
+    <section class="card">
+        <h2>Własne wpisy</h2>
+
+        {% for post in custom_posts %}
+            <article class="card">
+                <p><strong>{{ post.title }}</strong></p>
+                <p>{{ post.excerpt }}</p>
+                <p>
+                    <a href="{{ path('blog_show', {slug: post.slug}) }}">Pokaż</a>
+                    | <a href="{{ path('admin_post_edit', {slug: post.slug}) }}">Edytuj</a>
+                </p>
+                <form method="post" action="{{ path('admin_post_delete', {slug: post.slug}) }}" onsubmit="return confirm('Usunąć wpis?');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete_post_' ~ post.slug) }}">
+                    <button type="submit">Usuń</button>
+                </form>
+            </article>
+        {% else %}
+            <p>Brak własnych wpisów.</p>
+        {% endfor %}
+    </section>
+
+    <section class="card">
+        <h2>Użytkownicy</h2>
+
+        {% for user in users %}
+            <article class="card">
+                <p><strong>{{ user.email }}</strong></p>
+                <p>Role: {{ user.roles|join(', ') }}</p>
+                <p>
+                    {% if admin_count == 1 and app.user and app.user.id == user.id and 'ROLE_ADMIN' in user.roles %}
+                        Nie można zmienić roli jedynego administratora.
+                    {% else %}
+                        <a href="{{ path('admin_user_role', {id: user.id}) }}">Zmień rolę</a>
+                    {% endif %}
+                </p>
+                {% if admin_count == 1 and 'ROLE_ADMIN' in user.roles %}
+                    <p>Nie można usunąć ostatniego administratora.</p>
+                {% else %}
+                    <form method="post" action="{{ path('admin_user_delete', {id: user.id}) }}" onsubmit="return confirm('Usunąć użytkownika?');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete_user_' ~ user.id) }}">
+                        <button type="submit">Usuń użytkownika</button>
+                    </form>
+                {% endif %}
+            </article>
+        {% else %}
+            <p>Brak użytkowników w bazie.</p>
+        {% endfor %}
+
+        <p><a href="{{ path('blog_index') }}">Wróć do strony głównej</a></p>
+    </section>
+{% endblock %}

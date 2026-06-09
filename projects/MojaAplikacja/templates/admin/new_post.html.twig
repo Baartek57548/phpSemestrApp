@@ -1,0 +1,32 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ page_title|default('Nowy wpis') }}{% endblock %}
+
+{% block body %}
+    <section class="form-panel">
+        <h2>{{ page_title|default('Dodaj nowy wpis') }}</h2>
+
+        {{ form_start(post_form) }}
+            <div class="form-row">
+                {{ form_label(post_form.title) }}
+                {{ form_widget(post_form.title) }}
+                <div class="form-errors">{{ form_errors(post_form.title) }}</div>
+            </div>
+            <div class="form-row">
+                {{ form_label(post_form.excerpt) }}
+                {{ form_widget(post_form.excerpt) }}
+                <div class="form-errors">{{ form_errors(post_form.excerpt) }}</div>
+            </div>
+            <div class="form-row">
+                {{ form_label(post_form.content) }}
+                {{ form_widget(post_form.content) }}
+                <div class="form-errors">{{ form_errors(post_form.content) }}</div>
+            </div>
+            <div class="form-row">
+                {{ form_widget(post_form.save) }}
+            </div>
+        {{ form_end(post_form) }}
+
+        <p><a href="{{ path('admin_index') }}">Wróć do panelu admina</a></p>
+    </section>
+{% endblock %}

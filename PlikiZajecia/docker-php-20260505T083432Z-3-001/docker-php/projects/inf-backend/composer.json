@@ -1,0 +1,11 @@
+{
+  "name": "upsl/inf-2026",
+  "type": "project",
+  "license": "MIT",
+  "require": {},
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  }
+}

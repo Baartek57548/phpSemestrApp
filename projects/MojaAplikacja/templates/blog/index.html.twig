@@ -1,0 +1,40 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Strona glowna{% endblock %}
+
+{% block body %}
+    <section class="form-panel">
+        <h2>Wyszukiwarka wpisow</h2>
+        {{ form_start(search_form) }}
+            <div class="form-row">
+                {{ form_label(search_form.query) }}
+                {{ form_widget(search_form.query) }}
+            </div>
+            <div class="form-row">
+                {{ form_widget(search_form.search) }}
+            </div>
+        {{ form_end(search_form) }}
+    </section>
+
+    {% if query %}
+        <p>Wyniki dla frazy: <strong>{{ query }}</strong></p>
+    {% endif %}
+
+    {% if is_granted('ROLE_ADMIN') %}
+        <p><a href="{{ path('admin_post_new') }}">Dodaj nowy wpis</a></p>
+    {% endif %}
+
+    {% for post in posts %}
+        <article class="card">
+            <h2>
+                <a href="{{ path('blog_show', { slug: post.slug }) }}">{{ post.title }}</a>
+            </h2>
+            <p>{{ post.excerpt }}</p>
+            {% if post.created_at is defined %}
+                <p><small>Dodano: {{ post.created_at }}</small></p>
+            {% endif %}
+        </article>
+    {% else %}
+        <p>Brak wpisow pasujacych do podanej frazy.</p>
+    {% endfor %}
+{% endblock %}

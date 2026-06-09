@@ -1,0 +1,36 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Blog{% endblock %}
+
+{% block body %}
+    <main style="max-width: 860px; margin: 40px auto; font-family: sans-serif; line-height: 1.5;">
+        <h1>{{ framework_name }} dziala</h1>
+
+
+        <ul>
+            {% for feature in features %}
+                <li>{{ feature }}</li>
+            {% endfor %}
+        </ul>
+
+        <h2>Przykladowe endpointy</h2>
+        
+        <ul>
+            <li><a href="/">/</a> - ta strona HTML</li>
+            <li><a href="/api/demo/Bartek">/api/demo/Bartek</a> - przykladowy endpoint JSON</li>
+        </ul>
+
+        <h2>Gdzie szukac kodu</h2>
+        <ul>
+            <li><code>public/index.php</code> - front controller</li>
+            <li><code>src/Kernel.php</code> - kernel aplikacji</li>
+            <li><code>src/Controller/DemoController.php</code> - logika kontrolera</li>
+            <li><code>templates/demo/index.html.twig</code> - widok Twig</li>
+            <li><code>config/services.yaml</code> - konfiguracja serwisow i autowire</li>
+        </ul>
+
+        <p>
+            Wersja frameworka dobrana do tego srodowiska: {{ version_hint }}.
+        </p>
+    </main>
+{% endblock %}
