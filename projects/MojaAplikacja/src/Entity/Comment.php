@@ -7,6 +7,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: CommentRepository::class)]
 #[ORM\Table(name: 'comment')]
+#[ORM\Index(name: 'IDX_9474526CF675F31B', columns: ['author_id'])]
+#[ORM\Index(name: 'IDX_9474526C4B89032C', columns: ['post_id'])]
 class Comment
 {
     #[ORM\Id]
@@ -20,7 +22,7 @@ class Comment
     #[ORM\Column(type: 'smallint')]
     private ?int $rating = null;
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'datetime_immutable')]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]

@@ -9,6 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: PostRepository::class)]
 #[ORM\Table(name: 'post')]
+#[ORM\Index(name: 'IDX_5A8A6C8DF675F31B', columns: ['author_id'])]
 #[ORM\UniqueConstraint(name: 'UNIQ_POST_SLUG', fields: ['slug'])]
 class Post
 {
@@ -29,10 +30,10 @@ class Post
     #[ORM\Column(type: 'text')]
     private ?string $content = null;
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'datetime_immutable')]
     private ?\DateTimeImmutable $createdAt = null;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
