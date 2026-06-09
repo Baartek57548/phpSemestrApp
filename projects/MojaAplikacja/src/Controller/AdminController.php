@@ -2,11 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\Post;
 use App\Entity\User;
 use App\Form\PostType;
 use App\Form\UserRoleType;
+use App\Repository\PostRepository;
 use App\Repository\UserRepository;
-use App\Service\CustomPostStorage;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,39 +18,55 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 final class AdminController extends AbstractController
 {
-    public function __construct(
-        private readonly CustomPostStorage $customPostStorage,
-    ) {
-    }
-
     #[Route('/admin', name: 'admin_index')]
-    public function index(UserRepository $userRepository): Response
+    public function index(UserRepository $userRepository, PostRepository $postRepository): Response
     {
         return $this->render('admin/index.html.twig', [
             'users' => $userRepository->findBy([], ['email' => 'ASC']),
-            'custom_posts' => $this->customPostStorage->getAll(),
+            'custom_posts' => array_map(
+                static fn (Post $post): array => [
+                    'slug' => $post->getSlug(),
+                    'title' => $post->getTitle(),
+                    'excerpt' => $post->getExcerpt(),
+                ],
+                $postRepository->findBy([], ['createdAt' => 'DESC'])
+            ),
             'admin_count' => $userRepository->countAdmins(),
         ]);
     }
 
     #[Route('/admin/post/new', name: 'admin_post_new')]
-    public function newPost(Request $request): Response
+    public function newPost(Request $request, EntityManagerInterface $entityManager, PostRepository $postRepository): Response
     {
         $form = $this->createForm(PostType::class);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
-            $posts = array_merge($this->customPostStorage->getAll(), $this->getStaticPosts());
-            $slug = $this->createUniqueSlug((string) $data['title'], $posts);
+            $slug = $this->createUniqueSlug(
+                (string) $data['title'],
+                array_map(
+                    static fn (Post $post): string => (string) $post->getSlug(),
+                    $postRepository->findAll()
+                )
+            );
 
-            $this->customPostStorage->add([
-                'slug' => $slug,
-                'title' => (string) $data['title'],
-                'excerpt' => (string) $data['excerpt'],
-                'content' => (string) $data['content'],
-                'created_at' => (new \DateTimeImmutable())->format('d.m.Y H:i'),
-            ]);
+            $currentUser = $this->getUser();
+
+            if (!$currentUser instanceof User) {
+                throw $this->createAccessDeniedException('Musisz byc zalogowany jako administrator.');
+            }
+
+            $post = new Post();
+            $post->setSlug($slug);
+            $post->setTitle((string) $data['title']);
+            $post->setExcerpt((string) $data['excerpt']);
+            $post->setContent((string) $data['content']);
+            $post->setCreatedAt(new \DateTimeImmutable());
+            $post->setAuthor($currentUser);
+
+            $entityManager->persist($post);
+            $entityManager->flush();
             $this->addFlash('success', 'Nowy wpis został dodany.');
 
             return $this->redirectToRoute('blog_show', ['slug' => $slug]);
@@ -62,31 +79,30 @@ final class AdminController extends AbstractController
     }
 
     #[Route('/admin/post/{slug}/edit', name: 'admin_post_edit')]
-    public function editPost(string $slug, Request $request): Response
+    public function editPost(string $slug, Request $request, PostRepository $postRepository, EntityManagerInterface $entityManager): Response
     {
-        $post = $this->customPostStorage->findOneBySlug($slug);
+        $post = $postRepository->findOneBy(['slug' => $slug]);
 
-        if ($post === null) {
+        if (!$post instanceof Post) {
             throw $this->createNotFoundException('Nie znaleziono wpisu do edycji.');
         }
 
         $form = $this->createForm(PostType::class, [
-            'title' => $post['title'] ?? '',
-            'excerpt' => $post['excerpt'] ?? '',
-            'content' => $post['content'] ?? '',
+            'title' => $post->getTitle() ?? '',
+            'excerpt' => $post->getExcerpt() ?? '',
+            'content' => $post->getContent() ?? '',
         ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
 
-            $this->customPostStorage->update($slug, [
-                'slug' => $slug,
-                'title' => (string) $data['title'],
-                'excerpt' => (string) $data['excerpt'],
-                'content' => (string) $data['content'],
-                'created_at' => $post['created_at'] ?? (new \DateTimeImmutable())->format('d.m.Y H:i'),
-            ]);
+            $post->setTitle((string) $data['title']);
+            $post->setExcerpt((string) $data['excerpt']);
+            $post->setContent((string) $data['content']);
+            $post->setUpdatedAt(new \DateTimeImmutable());
+
+            $entityManager->flush();
 
             $this->addFlash('success', 'Wpis został zaktualizowany.');
 
@@ -100,17 +116,20 @@ final class AdminController extends AbstractController
     }
 
     #[Route('/admin/post/{slug}/delete', name: 'admin_post_delete', methods: ['POST'])]
-    public function deletePost(string $slug, Request $request): Response
+    public function deletePost(string $slug, Request $request, PostRepository $postRepository, EntityManagerInterface $entityManager): Response
     {
         if (!$this->isCsrfTokenValid('delete_post_'.$slug, (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Nieprawidłowy token CSRF.');
         }
 
-        if ($this->customPostStorage->findOneBySlug($slug) === null) {
+        $post = $postRepository->findOneBy(['slug' => $slug]);
+
+        if (!$post instanceof Post) {
             throw $this->createNotFoundException('Nie znaleziono wpisu do usunięcia.');
         }
 
-        $this->customPostStorage->delete($slug);
+        $entityManager->remove($post);
+        $entityManager->flush();
         $this->addFlash('success', 'Wpis został usunięty.');
 
         return $this->redirectToRoute('admin_index');
@@ -176,14 +195,13 @@ final class AdminController extends AbstractController
         return $this->redirectToRoute('admin_index');
     }
 
-    private function createUniqueSlug(string $title, array $posts): string
+    private function createUniqueSlug(string $title, array $existingSlugs): string
     {
         $slug = mb_strtolower($title);
         $slug = preg_replace('/[^a-z0-9]+/iu', '-', $slug) ?? 'wpis';
         $slug = trim($slug, '-');
         $slug = $slug !== '' ? $slug : 'wpis';
 
-        $existingSlugs = array_column($posts, 'slug');
         $uniqueSlug = $slug;
         $counter = 1;
 
@@ -193,16 +211,5 @@ final class AdminController extends AbstractController
         }
 
         return $uniqueSlug;
-    }
-
-    private function getStaticPosts(): array
-    {
-        return [
-            ['slug' => 'moja-kawa'],
-            ['slug' => 'spacer'],
-            ['slug' => 'zakupy'],
-            ['slug' => 'nauka-php'],
-            ['slug' => 'deszczowy-dzien'],
-        ];
     }
 }

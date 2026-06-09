@@ -19,25 +19,6 @@ class PostCommentType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('author', TextType::class, [
-                'label' => 'Imie',
-                'constraints' => [
-                    new NotBlank(message: 'Podaj imie.'),
-                    new Length(
-                        min: 2,
-                        max: 40,
-                        minMessage: 'Imie powinno miec przynajmniej {{ limit }} znaki.',
-                        maxMessage: 'Imie moze miec maksymalnie {{ limit }} znakow.',
-                    ),
-                ],
-            ])
-            ->add('email', EmailType::class, [
-                'label' => 'E-mail',
-                'constraints' => [
-                    new NotBlank(message: 'Podaj adres e-mail.'),
-                    new Email(message: 'Podaj poprawny adres e-mail.'),
-                ],
-            ])
             ->add('rating', ChoiceType::class, [
                 'label' => 'Ocena wpisu',
                 'placeholder' => 'Wybierz ocene',
@@ -69,7 +50,7 @@ class PostCommentType extends AbstractType
                 ],
             ])
             ->add('save', SubmitType::class, [
-                'label' => 'Dodaj opinie',
+                'label' => 'Dodaj komentarz',
             ]);
     }
 

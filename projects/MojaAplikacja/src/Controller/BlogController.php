@@ -2,9 +2,14 @@
 
 namespace App\Controller;
 
+use App\Entity\Comment;
+use App\Entity\Post;
+use App\Entity\User;
 use App\Form\PostCommentType;
 use App\Form\PostSearchType;
-use App\Service\CustomPostStorage;
+use App\Repository\CommentRepository;
+use App\Repository\PostRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -14,42 +19,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class BlogController extends AbstractController
 {
     public function __construct(
-        private readonly CustomPostStorage $customPostStorage,
+        private readonly PostRepository $postRepository,
+        private readonly CommentRepository $commentRepository,
+        private readonly EntityManagerInterface $entityManager,
     ) {
     }
-
-    private const POSTS = [
-        [
-            'slug' => 'moja-kawa',
-            'title' => 'Moja kawa',
-            'excerpt' => 'Dzisiaj wypiłem kawę.',
-            'content' => 'Kawa była dobra. Dodałem trochę mleka i wypiłem ją przed zajęciami.'
-        ],
-        [
-            'slug' => 'spacer',
-            'title' => 'Krótki spacer',
-            'excerpt' => 'Byłem na spacerze.',
-            'content' => 'Pogoda była całkiem dobra. Przeszedłem kilka kilometrów i wróciłem do domu.'
-        ],
-        [
-            'slug' => 'zakupy',
-            'title' => 'Zakupy',
-            'excerpt' => 'Kupiłem kilka rzeczy.',
-            'content' => 'W sklepie kupiłem chleb, mleko i wodę. Nie było dużej kolejki.'
-        ],
-        [
-            'slug' => 'nauka-php',
-            'title' => 'Nauka PHP',
-            'excerpt' => 'Ćwiczę PHP.',
-            'content' => 'Dzisiaj nauczyłem się tworzyć tablice i wyświetlać dane na stronie.'
-        ],
-        [
-            'slug' => 'deszczowy-dzien',
-            'title' => 'Deszczowy dzień',
-            'excerpt' => 'Padał deszcz.',
-            'content' => 'Przez większość dnia padało. Zostałem w domu i oglądałem filmy.'
-        ],
-    ];
 
     #[Route('/', name: 'blog_index')]
     public function index(Request $request): Response
@@ -71,43 +45,73 @@ class BlogController extends AbstractController
     #[Route('/post/{slug}', name: 'blog_show')]
     public function show(string $slug, Request $request): Response
     {
-        foreach ($this->getAllPosts() as $post) {
-            if ($post['slug'] === $slug) {
-                $commentForm = $this->createForm(PostCommentType::class);
-                $commentForm->handleRequest($request);
+        $post = $this->postRepository->findOneBy(['slug' => $slug]);
 
-                $storedComments = $request->getSession()->get('post_comments', []);
-
-                if ($commentForm->isSubmitted() && $commentForm->isValid()) {
-                    $data = $commentForm->getData();
-                    $storedComments[$slug][] = [
-                        'author' => $data['author'],
-                        'email' => $data['email'],
-                        'rating' => $data['rating'],
-                        'message' => $data['message'],
-                        'created_at' => (new \DateTimeImmutable())->format('d.m.Y H:i'),
-                    ];
-
-                    $request->getSession()->set('post_comments', $storedComments);
-                    $this->addFlash('success', 'Twoja opinia została zapisana.');
-
-                    return $this->redirectToRoute('blog_show', ['slug' => $slug]);
-                }
-
-                return $this->render('blog/show.html.twig', [
-                    'post' => $post,
-                    'comment_form' => $commentForm->createView(),
-                    'comments' => $storedComments[$slug] ?? [],
-                ]);
-            }
+        if (!$post instanceof Post) {
+            throw $this->createNotFoundException('Nie znaleziono wpisu.');
         }
 
-        throw $this->createNotFoundException('Nie znaleziono wpisu.');
+        $commentForm = $this->createForm(PostCommentType::class);
+        $commentForm->handleRequest($request);
+
+        if ($commentForm->isSubmitted() && $commentForm->isValid()) {
+            $data = $commentForm->getData();
+            $currentUser = $this->getUser();
+
+            if (!$currentUser instanceof User) {
+                throw $this->createAccessDeniedException('Musisz byc zalogowany, aby dodac komentarz.');
+            }
+
+            $comment = new Comment();
+            $comment->setContent((string) $data['message']);
+            $comment->setRating((int) $data['rating']);
+            $comment->setCreatedAt(new \DateTimeImmutable());
+            $comment->setAuthor($currentUser);
+            $comment->setPost($post);
+
+            $this->entityManager->persist($comment);
+            $this->entityManager->flush();
+
+            $this->addFlash('success', 'Twoj komentarz zostal zapisany.');
+
+            return $this->redirectToRoute('blog_show', ['slug' => $slug]);
+        }
+
+        $comments = array_map(
+            static fn (Comment $comment): array => [
+                'author' => $comment->getAuthor()?->getEmail() ?? 'Nieznany uzytkownik',
+                'rating' => $comment->getRating(),
+                'message' => $comment->getContent(),
+                'created_at' => $comment->getCreatedAt()?->format('d.m.Y H:i'),
+            ],
+            $this->commentRepository->findBy(['post' => $post], ['createdAt' => 'ASC'])
+        );
+
+        return $this->render('blog/show.html.twig', [
+            'post' => [
+                'slug' => $post->getSlug(),
+                'title' => $post->getTitle(),
+                'excerpt' => $post->getExcerpt(),
+                'content' => $post->getContent(),
+                'created_at' => $post->getCreatedAt()?->format('d.m.Y H:i'),
+            ],
+            'comment_form' => $commentForm->createView(),
+            'comments' => $comments,
+        ]);
     }
 
     private function getAllPosts(): array
     {
-        return array_merge($this->customPostStorage->getAll(), self::POSTS);
+        return array_map(
+            static fn (Post $post): array => [
+                'slug' => $post->getSlug(),
+                'title' => $post->getTitle(),
+                'excerpt' => $post->getExcerpt(),
+                'content' => $post->getContent(),
+                'created_at' => $post->getCreatedAt()?->format('d.m.Y H:i'),
+            ],
+            $this->postRepository->findBy([], ['createdAt' => 'DESC'])
+        );
     }
 
     private function filterPosts(array $posts, string $query): array
