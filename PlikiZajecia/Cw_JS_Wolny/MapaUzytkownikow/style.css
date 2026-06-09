@@ -1,6 +1,0 @@
-body { margin: 0; padding: 0; }
-/* mapa musi mieć zdefiniowaną wysokość */
-#map { 
-    height: 100vh; 
-    width: 100%; 
-}

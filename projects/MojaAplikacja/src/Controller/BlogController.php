@@ -22,8 +22,7 @@ class BlogController extends AbstractController
         private readonly PostRepository $postRepository,
         private readonly CommentRepository $commentRepository,
         private readonly EntityManagerInterface $entityManager,
-    ) {
-    }
+    ) {}
 
     #[Route('/', name: 'blog_index')]
     public function index(Request $request): Response
@@ -78,7 +77,7 @@ class BlogController extends AbstractController
         }
 
         $comments = array_map(
-            static fn (Comment $comment): array => [
+            static fn(Comment $comment): array => [
                 'author' => $comment->getAuthor()?->getEmail() ?? 'Nieznany uzytkownik',
                 'rating' => $comment->getRating(),
                 'message' => $comment->getContent(),
@@ -103,7 +102,7 @@ class BlogController extends AbstractController
     private function getAllPosts(): array
     {
         return array_map(
-            static fn (Post $post): array => [
+            static fn(Post $post): array => [
                 'slug' => $post->getSlug(),
                 'title' => $post->getTitle(),
                 'excerpt' => $post->getExcerpt(),

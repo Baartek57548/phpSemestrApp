@@ -24,7 +24,7 @@ final class AdminController extends AbstractController
         return $this->render('admin/index.html.twig', [
             'users' => $userRepository->findBy([], ['email' => 'ASC']),
             'custom_posts' => array_map(
-                static fn (Post $post): array => [
+                static fn(Post $post): array => [
                     'slug' => $post->getSlug(),
                     'title' => $post->getTitle(),
                     'excerpt' => $post->getExcerpt(),
@@ -46,7 +46,7 @@ final class AdminController extends AbstractController
             $slug = $this->createUniqueSlug(
                 (string) $data['title'],
                 array_map(
-                    static fn (Post $post): string => (string) $post->getSlug(),
+                    static fn(Post $post): string => (string) $post->getSlug(),
                     $postRepository->findAll()
                 )
             );
@@ -118,7 +118,7 @@ final class AdminController extends AbstractController
     #[Route('/admin/post/{slug}/delete', name: 'admin_post_delete', methods: ['POST'])]
     public function deletePost(string $slug, Request $request, PostRepository $postRepository, EntityManagerInterface $entityManager): Response
     {
-        if (!$this->isCsrfTokenValid('delete_post_'.$slug, (string) $request->request->get('_token'))) {
+        if (!$this->isCsrfTokenValid('delete_post_' . $slug, (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Nieprawidłowy token CSRF.');
         }
 
@@ -177,7 +177,7 @@ final class AdminController extends AbstractController
     #[Route('/admin/user/{id}/delete', name: 'admin_user_delete', methods: ['POST'])]
     public function deleteUser(User $user, Request $request, EntityManagerInterface $entityManager, UserRepository $userRepository): Response
     {
-        if (!$this->isCsrfTokenValid('delete_user_'.$user->getId(), (string) $request->request->get('_token'))) {
+        if (!$this->isCsrfTokenValid('delete_user_' . $user->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Nieprawidłowy token CSRF.');
         }
 
